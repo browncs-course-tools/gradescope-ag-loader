@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+#set -x
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+AG_ROOT="${SCRIPT_DIR}"
+AG_SOURCE="${AG_ROOT}/source"
+
+RESULTS_FILE=${AG_ROOT}/results/results.json
+
+LOCAL_ENV=${SCRIPT_DIR}/env-local.sh
+source $LOCAL_ENV
+INSTRUCTOR_CONFIG=${INSTRUCTOR_ROOT}/${INSTRUCTOR_CONFIG_REL_PATH}
+
+GLOBALS_TARGET=${AG_SOURCE}/env.sh
+
+main()
+{
+    name=$1
+    submission=$2
+    results_file=${RESULTS_FILE}
+
+    rm -fv ${results_file}
+
+    ${AG_SOURCE}/set_globals --name "${name}" --config ${INSTRUCTOR_CONFIG} ${GLOBALS_TARGET}
+    source ${GLOBALS_TARGET}
+
+    echo ${INSTRUCTOR_ROOT}/${ASSIGNMENT_RUN_TARGET} \
+	 --command ${ASSIGNMENT_RUN_COMMAND} \
+	 --submission "${submission}" \
+	 --results-file "${results_file}"
+
+    #pushd ${AG_SOURCE} > /dev/null
+    cat "${results_file}" | jq
+}
+
+main $@
+

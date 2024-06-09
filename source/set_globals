@@ -1,0 +1,120 @@
+#!/bin/bash
+
+set -euo pipefail
+#set -x
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+AG_SOURCE=${SCRIPT_DIR}
+EARLY_GLOBALS=${SCRIPT_DIR}/early-env.sh
+
+source $EARLY_GLOBALS
+
+#GLOBALS_TARGET=${AG_SOURCE}/env.sh
+
+get_by_id()
+{
+    config=$1
+    id=$2
+    jq -cre ".assignments | .[] | select(.id==${id})" $config
+}
+
+get_by_name()
+{
+    config=$1
+    id=$2
+    jq -cre ".assignments | .[] | select(.name==\"${name}\")" $config
+}
+
+get_var()
+{
+    assignment_dict=$1
+    param=$2
+
+    echo "${assignment_dict}" | jq -er ".${param}"
+}
+
+
+main()
+{
+    method=""
+    name=""
+    metadata_file=""
+    config_file=""
+    reset=1
+
+    POSITIONAL=()
+    while [[ $# -gt 0 ]]; do
+	key=$1
+	case $key in
+	    --config)
+		config_file=$2
+		shift
+		shift
+		;;
+	    --metadata)
+		method="metadata"
+		metadata_file=$2
+		shift
+		shift
+		;;
+	    --name)
+		method="name"
+		name=$2
+		shift
+		shift
+		;;
+	    --no-reset)
+		reset=0
+		shift
+		;;
+	    *)
+		POSITIONAL+=("$1")
+		shift
+	esac
+    done
+    set -- "${POSITIONAL[@]}"
+    GLOBALS_TARGET="$1"
+
+    if [[ $reset == 1 ]]; then
+	rm -fv $GLOBALS_TARGET
+    fi
+
+    if [[ ! -e $config_file ]]; then
+	echo "Unable to find instructor assignment config at ${config_file}"
+	exit 1
+    fi
+    echo "Found instructor config:  ${config_file}"
+
+    assignment_config=""
+    rv=0
+    case $method in
+	metadata)
+	    assignment_id=$(jq -r .assignment.id $metadata_file)
+	    assignment_config="$(get_by_id $config_file $assignment_id || rv=$?)"
+	;;
+	name)
+	    assignment_config="$(get_by_name $config_file $name || rv=$?)"
+	;;
+	*)
+	    echo "Must specify one of --metadata or --name"
+	    exit 1
+	;;
+    esac
+
+    if [[ -z $assignment_config ]]; then
+	echo "Unable to find grading configuration for assignment"
+	exit 1
+    fi
+
+    # Set globals
+    # TODO:  This will not throw an error if any of the JSON variables are undefined
+    echo "
+#!/usr/bin/env bash
+
+ASSIGNMENT_NAME=$(get_var $assignment_config "name")
+ASSIGNMENT_RUN_TARGET=$(get_var $assignment_config "target")
+ASSIGNMENT_RUN_COMMAND=$(get_var $assignment_config "command")
+" > $GLOBALS_TARGET
+}
+
+main $@

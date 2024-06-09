@@ -1,0 +1,15 @@
+build==0.10.0
+cffi==1.15.1
+cryptography==3.3.1
+dacite==1.8.0
+gradescope-utils==0.5.0
+numpy==1.24.3
+packaging==23.1
+pycparser==2.21
+pymerkle==4.0.0
+pyproject_hooks==1.0.0
+six==1.16.0
+timeout-decorator==0.5.0
+tomli==2.0.1
+pytest
+-e git+https://github.com/brown-csci0200/pytest_utils.git@ee848903433872b23e9a8f9a4882055c7c2758b3#egg=pytest_utils

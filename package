@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+set -eu
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+AG_ROOT="${SCRIPT_DIR}"
+AG_SOURCE="${AG_ROOT}/source"
+
+
+ZIPPED=export
+mkdir -p $ZIPPED
+TARGET=${ZIPPED}/autograder-loader.zip
+rm -fv ${TARGET}
+
+sync
+sync
+sync
+
+pushd ${AG_SOURCE} > /dev/null
+zip -rv ../${TARGET} ./*
+
+popd

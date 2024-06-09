@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+AG_ROOT=/autograder
+AG_SOURCE="${AG_ROOT}/source"
+SUBMISSION=/autograder/submission
+INSTRUCTOR_ROOT=${AG_SOURCE}/instructor
+SUBMISSION_METADATA=/autograder/submission_metadata.json
+
+RESULTS_FILE=${AG_ROOT}/results/results.json
+
+
+GLOBALS_TARGET=${AG_SOURCE}/env.sh
+
+export CARGO_HOME=/opt/rust
+export RUSTUP_HOME=/opt/rust
+export PATH=$PATH:/opt/rust/bin
+export PATH=$PATH:/usr/local/go/bin
+
+setup_ssh_key()
+{
+    mkdir -p /root/.ssh
+    # echo "checking .ssh status: ls /root/.ssh"
+    # ls /root/.ssh
+    cp -a ${AG_SOURCE}/ssh/. /root/.ssh/
+
+    # Make sure to include your private key here
+    chmod 0600 /root/.ssh/config
+    chmod 0600 /root/.ssh/deploy_key
+
+    # To prevent host key verification errors at runtime
+    ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+}
+
+load_repo()
+{
+    if [[ ! -e $INSTRUCTOR_ROOT ]]; then
+	mkdir -p $INSTRUCTOR_ROOT
+	git clone -b ${INSTRUCTOR_REPO_BRANCH} ${INSTRUCTOR_REPO} ${INSTRUCTOR_ROOT}
+
+	pushd $INSTRUCTOR_ROOT > /dev/null
+	git reset HEAD --hard
+	git pull
+	#popd > /dev/null
+
+	#cd $SOURCE
+
+	#cd /autograder/source/instructor
+	git reset HEAD --hard >/dev/null
+	git pull >/dev/null
+	popd
+    else
+	echo "Skipping clone of instructor dir."
+    fi
+}
+
+
+do_gradescope()
+{
+    config=$1
+
+    setup_ssh_key
+    load_repo
+
+    submission="${AG_ROOT}/submission"
+    results_file="${RESULTS_FILE}"
+
+    ${AG_SOURCE}/set_globals --metadata $SUBMISSION_METADATA --config ${config} ${GLOBALS_TARGET}
+    source ${GLOBALS_TARGET}
+
+
+    ${INSTRUCTOR_ROOT}/${ASSIGNMENT_RUN_TARGET} \
+		      --command ${ASSIGNMENT_RUN_COMMAND} \
+		      --submission "${SUBMISSION}" \
+		      --results-file "${RESULTS_FILE}"
+
+}
+
+do_local()
+{
+    echo "Unsupported"
+    exit 1
+    config=$1
+    name=$2
+    submission=$3
+    results=results.json
+
+    ${SCRIPT_DIR}/set_globals --name "${name}" --config ${config} ${GLOBALS_TARGET}
+
+    ${INSTRUCTOR_ROOT}/${ASSIGNMENT_RUN_TARGET} \
+		      --command ${ASSIGNMENT_RUN_COMMAND} \
+		      --submission "${submission}" \
+		      --results-file "${results}"
+}
+
+main()
+{
+    is_local=0
+
+    POSITIONAL=()
+    while [[ $# -gt 0 ]]; do
+	key=$1
+	case $key in
+	    --local)
+		is_local=1
+		shift
+		;;
+	    *)
+		POSITIONAL+=("$1")
+		shift
+	esac
+    done
+    set -- "${POSITIONAL[@]}"
+
+    echo "Started autograder: $(date)"
+    if [[ $is_local == 1 ]]; then
+	do_local $@
+    else
+	source ${AG_SOURCE}/early-env.sh
+	INSTRUCTOR_CONFIG=${INSTRUCTOR_ROOT}/${INSTRUCTOR_CONFIG_REL_PATH}
+
+	do_gradescope ${INSTRUCTOR_CONFIG}
+    fi
+}
+
+main $@
+

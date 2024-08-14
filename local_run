@@ -9,30 +9,66 @@ AG_SOURCE="${AG_ROOT}/source"
 
 RESULTS_FILE=${AG_ROOT}/results/results.json
 
+source ${AG_SOURCE}/early-env.sh
+
 LOCAL_ENV=${SCRIPT_DIR}/env-local.sh
 source $LOCAL_ENV
-INSTRUCTOR_CONFIG=${INSTRUCTOR_ROOT}/${INSTRUCTOR_CONFIG_REL_PATH}
 
+INSTRUCTOR_CONFIG=${INSTRUCTOR_ROOT}/${INSTRUCTOR_CONFIG_REL_PATH}
 GLOBALS_TARGET=${AG_SOURCE}/env.sh
+
 
 main()
 {
+    debug=0
+
+    if [[ $# -lt 2 ]]; then
+	echo "Usage:  $0 <assignment name> <path to submission>"
+	echo "Results file will be located at ${RESULTS_FILE}"
+	exit 1
+    fi
+
+    POSITIONAL=()
+    while [[ $# -gt 0 ]]; do
+	key=$1
+	case $key in
+	    --debug)
+		debug=1
+		shift
+		;;
+	    *)
+		POSITIONAL+=("$1")
+		shift
+	esac
+    done
+    set -- "${POSITIONAL[@]}"
+
     name=$1
     submission=$2
     results_file=${RESULTS_FILE}
+    extra_args=""
+
+    if [[ $debug == 1 ]]; then
+	set -x
+	extra_args="${extra_args} --debug"
+    fi
 
     rm -fv ${results_file}
 
     ${AG_SOURCE}/set_globals --name "${name}" --config ${INSTRUCTOR_CONFIG} ${GLOBALS_TARGET}
     source ${GLOBALS_TARGET}
 
-    echo ${INSTRUCTOR_ROOT}/${ASSIGNMENT_RUN_TARGET} \
+    ${INSTRUCTOR_ROOT}/${ASSIGNMENT_RUN_TARGET} \
+	 ${extra_args} \
 	 --command ${ASSIGNMENT_RUN_COMMAND} \
 	 --submission "${submission}" \
 	 --results-file "${results_file}"
-
-    #pushd ${AG_SOURCE} > /dev/null
-    cat "${results_file}" | jq
+    if [[ -e ${results_file} ]]; then
+	cat "${results_file}" | jq
+    else
+	echo "No results file found at ${results_file}"
+	echo "If you aren't sure if the autograder code is running, try --debug"
+    fi
 }
 
 main $@

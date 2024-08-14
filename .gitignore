@@ -5,4 +5,8 @@
 .DS_Store
 
 env-local.sh
+source/env.sh
 source/ssh/id*
+source/ssh/deploy_key*
+
+export/*.zip

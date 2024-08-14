@@ -9,5 +9,6 @@ pyproject_hooks==1.0.0
 six==1.16.0
 timeout-decorator==0.5.0
 tomli==2.0.1
+cryptography
 pytest
 -e git+https://github.com/brown-csci0200/pytest_utils.git@ee848903433872b23e9a8f9a4882055c7c2758b3#egg=pytest_utils

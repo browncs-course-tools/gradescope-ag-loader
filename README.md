@@ -35,7 +35,8 @@ contains only enough code to download the main repository and decide
 which assignment to run.  The next few sections describe the major
 components and how to configure them.
 
-> [!NOTE] The loader architecture requires you to have all of the
+> [!NOTE] 
+> The loader architecture requires you to have all of the
 > autograder code in a single repository (ie, your main autograder
 > repository).  Fetching from multiple repositories (or git
 > submodules) is currently not supported.  If you want to do this, it
@@ -54,7 +55,8 @@ the following:
  - Any other tools your particular course autograders may need
    (eg. Python, Go, Java, etc.)
 
-> [!IMPORTANT] **If you use Windows**: you MUST use this autograder
+> [!IMPORTANT] 
+> **If you use Windows**: you MUST use this autograder
 > environment from inside WSL.  To set up your WSL installation, you
 > must install java and python inside WSL.  If you are on a standard
 > Ubuntu WSL, there is a good chance you already have a suitable
@@ -189,8 +191,8 @@ To set up your local configuration:
    
 ```
 # Syntax:  realpath <path to main source repo> 
-you@your-system:~/cs200/ag-loader realpath ../ag-main
-/home/you/whatever/cs200/ag-main
+you@your-system:~/cs200/gradescope-ag-loader realpath ../gradescope-ag-main
+/home/you/whatever/cs200/gradescope-ag-main
 ```
 
 3. Open your `env-local.sh` and set the variable
@@ -198,7 +200,7 @@ you@your-system:~/cs200/ag-loader realpath ../ag-main
    eg.:
 
 ```
-INSTRUCTOR_ROOT=/home/you/whatever/ag-main
+INSTRUCTOR_ROOT=/home/you/whatever/gradescope-ag-main
 ```
 
 4. Save the file.  Your autograder should now be configured.
@@ -352,7 +354,8 @@ you@host:csNNNN/ag-loader/source/ssh$ ssh-keygen -f deploy_key
    should NOT give the deploy key write access.
    
 
-> [!WARNING] **DO NOT** commit the deploy key files to your loader
+> [!IMPORTANT] 
+> **DO NOT** commit the deploy key files to your loader
 > repsository, or any other repository.  This is for security reasons:
 > it is not a good practice to commit credentials like SSH
 > keys/passwords to git.  The loader repository is already configured
